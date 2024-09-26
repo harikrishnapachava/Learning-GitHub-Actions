@@ -1,0 +1,78 @@
+name: CI
+
+# Define the trigger for the workflow. In this case, it's triggered manually or on push events.
+on:
+  workflow_dispatch:
+  # [push]
+
+# Define the jobs for the workflow.
+jobs:
+  # Job to perform Bandit scan on the codebase.
+  sast_scan:
+    name: Run Bandit Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      # Check out the code from the repository.
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Set up Python for the Bandit scan.
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: 3.8
+
+      # Install Bandit tool for static analysis of Python code.
+      - name: Install Bandit
+        run: pip install bandit
+
+      # Run Bandit scan on the codebase and generate a JSON report.
+      - name: Run Bandit Scan
+        run: bandit -ll -ii -r . -f json -o bandit-report.json
+
+      # Upload the Bandit scan report as an artifact for later analysis.
+      - name: Upload Bandit Scan Artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bandit-findings
+          path: bandit-report.json
+
+  # Job to build Docker image and perform Docker Scout scan.
+  image_scan:
+    name: Build Image and Run Image Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      # Check out the code from the repository.
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Set up Docker for building and scanning Docker images.
+      - name: Set up Docker
+        uses: docker-practice/actions-setup-docker@master
+        with:
+          docker_version: "20.10.7"
+
+      # Build the Docker image for the application.
+      - name: Build Docker Image
+        run: docker build -f Dockerfile -t myapp:latest ./Pygoat
+
+      # Use Docker Scout to perform security scans on the Docker image.
+      - name: Docker Scout Scan
+        uses: docker/scout-action@v1.3.0
+        with:
+          dockerhub-user: ${{ secrets.REPO_USER }}
+          dockerhub-password: ${{ secrets.REPO_PWD }}
+          command: quickview,cves
+          only-severities: critical,high
+          sarif-file: scout-report.sarif
+
+      # Upload the Docker Scout scan report as an artifact for later analysis.
+      - name: Upload Docker Scout Scan Artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: docker-scout-findings
+          path: scout-report.sarif
