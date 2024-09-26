@@ -249,9 +249,5 @@ Let's break down the `image_scan` job into individual steps:
 
 These steps collectively define the `image_scan` job, providing a clear sequence of actions to build a Docker image, perform security scans, and upload the findings as an artifact.
 
-## Acknowledgment 
-
-Special thanks to **Nana Janashia** for her valuable guidance and teachings. You can find her on [Techworld with Nana](https://www.youtube.com/c/techworldwithnana).
-
 
 
